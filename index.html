@@ -771,21 +771,11 @@ select option { background: var(--bg-card); color: var(--text-primary); }
 // ══════════════════════════════════════════════════════════════
 // SUPABASE CONFIG — Ganti dengan credentials kamu
 // ══════════════════════════════════════════════════════════════
-const SUPABASE_URL = 'https://xxxxxxxxxxxx.supabase.co';
-const SUPABASE_ANON_KEY = 'your-anon-key-here';
+const SUPABASE_URL = 'https://byybpdgzvwkoegaggyxe.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5eWJwZGd6dndrb2VnYWdneXhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNjEwOTAsImV4cCI6MjA5MTczNzA5MH0.IBoP6U_N5hjaEr2sbX1DW6HKXuk7iyvytD8yLJzBuEI';
 
-let db = null;
-let useSupabase = false;
-
-try {
-  if (typeof supabase !== 'undefined' && SUPABASE_URL !== 'https://xxxxxxxxxxxx.supabase.co') {
-    const { createClient } = supabase;
-    db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    useSupabase = true;
-  }
-} catch(e) {
-  console.warn('Supabase not available, using local data');
-}
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ══════════════════════════════════════════════════════════════
 // MUSIC CONSTANTS
@@ -836,93 +826,37 @@ let displayPrefs = JSON.parse(localStorage.getItem('gldb_display_prefs')||'{"sol
 let activeFilter = '';
 let deleteTargetId = null;
 
-// ── DEFAULT LICKS (fallback when no Supabase) ──
-const DEFAULT_LICKS = [
-  {id:'d1',name:'Lydian Dom Bebop Lick 1 (original)',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'lainnya',notes:'la li fi la sol re li la sol do',catatan:'Chord: I7 | Contoh dari guru'},
-  {id:'d2',name:'Lydian Dom Bebop Chord I7 – A',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'lainnya',notes:'la li fi la sol re li la sol do',catatan:'Chord: I7 | Starting string 1 (high e) | angka: 6 6# 4# 6 5 2 6# 6 5 1'},
-  {id:'d3',name:'Lydian Dom Bebop Chord I7 – B',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'lainnya',notes:'fi la fi sol la li do re li la sol do',catatan:'Chord: I7 | Starting string 2 (B) | angka: 4#64#566#126#651'},
-  {id:'d4',name:'Lydian Dom Bebop Chord I7 – C',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'lainnya',notes:'sol li la sol fi sol do',catatan:'Chord: I7 | Starting string 2 (B) | angka: 56#654#51'},
-  {id:'d5',name:'Lydian Dom Bebop Chord I7 – D',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'lainnya',notes:'li la sol la li re',catatan:'Chord: I7 | Starting string 4 (D) | angka: 6#6566#2'},
-  {id:'d6',name:'Lydian Dom Bebop Chord I7 – E',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'lainnya',notes:'sol fi sol li do mi re do',catatan:'Chord: I7 | Starting string 2 (B) | angka: 54#56#1431'},
-  {id:'d7',name:'Lydian Dom Bebop Chord I7 – F',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'lainnya',notes:'li la sol la li re fi la fi sol li',catatan:'Chord: I7 | Starting string 3 (G) | angka: 6#6566#24#64#56#'},
-  {id:'d8',name:'Lydian Dom Bebop Chord I7 – G',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'lainnya',notes:'la li la sol la li sol li mi mi do',catatan:'Chord: I7 | Starting string 2 (B) | angka: 66#6566#56#331'},
-  {id:'d9',name:'Lydian Dom Bebop Chord I7 – H',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'lainnya',notes:'sol li sol la fi la sol',catatan:'Chord: I7 | Starting string 2 (B) | angka: 56#5614#65'},
-  {id:'d10',name:'Lydian Dom Bebop Chord I7 – I',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'lainnya',notes:'do li do mi sol li si la do',catatan:'Chord: I7 | Starting string 4 (D) | angka: 16#1356#5#61'},
-  {id:'d11',name:'Lydian Dom Bebop Chord I7 – J',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'lainnya',notes:'sol fi sol li do mi sol li sol la do',catatan:'Chord: I7 | Starting string 4 (D) | angka: 54#56#1356#561'},
-  {id:'d12',name:'Lydian Dom Bebop Chord I7 – K',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'lainnya',notes:'sol li sol la fi la sol re',catatan:'Chord: I7 | Starting string 2 (B) | angka: 56#5614#652'},
-  {id:'d13',name:'Lydian Dom Bebop Chord IV7 – A',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'IV',notes:'ti re ti do re ri fi sol ri re do fa',catatan:'Chord: IV7 | Starting string 4 (D) | angka: 727122#452#214'},
-  {id:'d14',name:'Lydian Dom Bebop Chord IV7 – B',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'IV',notes:'ri ti re do do sol fi sol re ri re do fa mi sol',catatan:'Chord: IV7 | Starting string 1 (high e) | angka: 2#721#15422#452#2142#35'},
-  {id:'d15',name:'Lydian Dom Bebop Chord IV7 – C',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'IV',notes:'re ri re do do si sol fi mi ti re ti do',catatan:'Chord: IV7 | Starting string 1 (high e) | angka: 22#21#15#54372171'},
-  {id:'d16',name:'Lydian Dom Bebop Chord IV7 – D',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'IV',notes:'la do ri sol re do fa mi sol',catatan:'Chord: IV7 | Starting string 4 (D) | angka: 612#52142#35'},
-  {id:'d17',name:'Lydian Dom Bebop Chord IV7 – E',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'IV',notes:'li la li la sol fi mi ri sol do re do',catatan:'Chord: IV7 | Starting string 2 (B) | angka: 6#66#654#432#5121'},
-  {id:'d18',name:'Lydian Dom Bebop Chord IV7 – F',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'IV',notes:'sol la ti do ri mi fa',catatan:'Chord: IV7 | Starting string 5 (A) | angka: 5671#234 | Ascending approach phrase'},
-  {id:'d19',name:'Lydian Dom Bebop Chord IV7 – G',mode:'Lydian Dominant',style:'Lydian Dominant Bebop',chord:'IV',notes:'fa sol la ti do re ri',catatan:'Chord: IV7 | Starting string 5 (A) | angka: 4567122# | Classic ascending scale run'},
-  {id:'d20',name:'Major Bebop 2-5-1 – A',mode:'Major Bebop',style:'Bebop',chord:'IIm-V-I',notes:'la re mi fa sol la ti do sol la mi fa re mi do',catatan:'angka: 62345617564325'},
-  {id:'d21',name:'Major Bebop 2-5-1 – B',mode:'Major Bebop',style:'Bebop',chord:'IIm-V-I',notes:'ti do mi sol ti la sol fa sol mi fa sol re mi do',catatan:'angka: 713576534564325'},
-  {id:'d22',name:'Major Bebop 2-5-1 – C',mode:'Major Bebop',style:'Bebop',chord:'IIm-V-I',notes:'do re ri mi sol la ti do la mi re mi do re sol',catatan:'ri (2#) = chromatic passing tone khas bebop | angka: 122#356516432567'},
-  {id:'d23',name:'Major Bebop 2-5-1 – D',mode:'Major Bebop',style:'Bebop',chord:'IIm-V-I',notes:'re do ti do ti do ti sol fi mi ri mi do ti re',catatan:'angka: 2171317154#423172'},
-  {id:'d24',name:'1-6-2-5 Bebop (placeholder)',mode:'Major Bebop / Dorian Bebop',style:'Bebop',chord:'lainnya',notes:'do',catatan:'Chord: I-VI7-IIm-V | Gunakan Major Bebop (I & VI7), Dorian Bebop (IIm), Mixolydian Bebop (V) — isi not-nya nanti'},
-];
-
 // ══════════════════════════════════════════════════════════════
 // SUPABASE CRUD
 // ══════════════════════════════════════════════════════════════
 async function fetchLicks() {
-  if (useSupabase) {
-    const { data, error } = await db.from('licks').select('*').order('created_at', { ascending: true });
-    if (error) { showToast('Gagal memuat: ' + error.message, true); return; }
-    licks = data || [];
-  } else {
-    // Fallback to local defaults
-    const stored = localStorage.getItem('gldb_licks');
-    if (stored) {
-      licks = JSON.parse(stored);
-    } else {
-      licks = DEFAULT_LICKS.slice();
-      localStorage.setItem('gldb_licks', JSON.stringify(licks));
-    }
-  }
+  const { data, error } = await db.from('licks').select('*').order('created_at', { ascending: true });
+  if (error) { showToast('Gagal memuat: ' + error.message, true); return; }
+  licks = data || [];
   populateDrillSelect();
   updateQuickDrill();
   buildFilterChips();
 }
 
 async function insertLick(obj) {
-  if (useSupabase) {
-    const { data, error } = await db.from('licks').insert(obj).select();
-    if (error) { showToast('Gagal menyimpan: ' + error.message, true); return null; }
-    return data[0];
-  } else {
-    obj.id = 'l' + Date.now();
-    obj.created_at = new Date().toISOString();
-    licks.push(obj);
-    localStorage.setItem('gldb_licks', JSON.stringify(licks));
-    return obj;
-  }
+  const { data, error } = await db.from('licks').insert(obj).select();
+  if (error) { showToast('Gagal menyimpan: ' + error.message, true); return null; }
+  licks.push(data[0]);
+  return data[0];
 }
 
 async function updateLick(id, obj) {
-  if (useSupabase) {
-    const { error } = await db.from('licks').update(obj).eq('id', id);
-    if (error) { showToast('Gagal update: ' + error.message, true); return false; }
-    const idx = licks.findIndex(l => l.id === id);
-    if (idx >= 0) Object.assign(licks[idx], obj);
-    return true;
-  } else {
-    const idx = licks.findIndex(l => l.id === id);
-    if (idx >= 0) Object.assign(licks[idx], obj);
-    localStorage.setItem('gldb_licks', JSON.stringify(licks));
-    return true;
-  }
+  const { error } = await db.from('licks').update(obj).eq('id', id);
+  if (error) { showToast('Gagal update: ' + error.message, true); return false; }
+  const idx = licks.findIndex(l => l.id === id);
+  if (idx >= 0) Object.assign(licks[idx], obj);
+  return true;
 }
 
 async function deleteLickById(id) {
-  if (useSupabase) {
-    const { error } = await db.from('licks').delete().eq('id', id);
-    if (error) { showToast('Gagal hapus: ' + error.message, true); return false; }
-  }
+  const { error } = await db.from('licks').delete().eq('id', id);
+  if (error) { showToast('Gagal hapus: ' + error.message, true); return false; }
   licks = licks.filter(l => l.id !== id);
-  if (!useSupabase) localStorage.setItem('gldb_licks', JSON.stringify(licks));
   return true;
 }
 
