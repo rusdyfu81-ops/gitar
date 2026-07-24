@@ -408,6 +408,49 @@
 </div>
 
 <script>
+  // Promise resolver ini dibuat SEBELUM modul Firebase dimuat, supaya
+  // fungsi storageGet/storageSet di script utama bisa "menunggu" Firebase
+  // siap, apapun urutan eksekusinya.
+  window.__fbReady = new Promise((resolve) => { window.__fbResolveReady = resolve; });
+</script>
+
+<script type="module">
+  // ============================================================
+  // KONFIGURASI FIREBASE — GANTI DENGAN CONFIG PROJECT KAMU SENDIRI
+  // Ambil dari: Firebase Console > Project Settings > General > Your apps > SDK setup and configuration
+  // ============================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyBIjLx8Wgev1wbbIiUTszs9bfol8NBazA0",
+    authDomain: "zenith-live-9deb2.firebaseapp.com",
+    projectId: "zenith-live-9deb2",
+    storageBucket: "zenith-live-9deb2.firebasestorage.app",
+    messagingSenderId: "355364426246",
+    appId: "1:355364426246:web:1aa89ececd3258b9cd6987",
+  };
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import {
+    getFirestore, doc, getDoc, setDoc
+  } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Semua data disimpan sebagai 1 dokumen per "key" di collection "zenith_store",
+  // meniru pola window.storage(key, value) yang dipakai kode aslinya, supaya
+  // sisa kode di bawah tidak perlu diubah banyak.
+  window.firebaseGetDoc = async (key) => {
+    const snap = await getDoc(doc(db, "zenith_store", key));
+    return snap.exists() ? snap.data().value : null;
+  };
+  window.firebaseSetDoc = async (key, value) => {
+    await setDoc(doc(db, "zenith_store", key), { value, updatedAt: Date.now() });
+  };
+
+  window.__fbResolveReady();
+</script>
+
+<script>
 /* ============================================================
    STORAGE
    ============================================================ */
@@ -436,12 +479,20 @@ let users = [];
 let currentUser = null; // in-memory only — resets on page reload, see note in UI
 
 async function storageGet(key){
-  try{ const r = await window.storage.get(key, true); return r ? JSON.parse(r.value) : null; }
-  catch(e){ return null; }
+  try{
+    await window.__fbReady;
+    const val = await window.firebaseGetDoc(key);
+    return val ? JSON.parse(val) : null;
+  }
+  catch(e){ console.error('storage get failed', key, e); return null; }
 }
 async function storageSet(key, val){
-  try{ await window.storage.set(key, JSON.stringify(val), true); return true; }
-  catch(e){ console.error('storage set failed', e); return false; }
+  try{
+    await window.__fbReady;
+    await window.firebaseSetDoc(key, JSON.stringify(val));
+    return true;
+  }
+  catch(e){ console.error('storage set failed', key, e); return false; }
 }
 async function loadAll(){
   products = (await storageGet(K_PRODUCTS)) || [];
